@@ -9,11 +9,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700&display=swap" rel="stylesheet" />
 
   <style>
-    body { font-family: "Cairo", sans-serif; background: #f5f7fa; display: flex; justify-content: center; padding: 30px; }
+    body { font-family: "Cairo", sans-serif; background: #f5f7fa; display: flex; justify-content: center;  }
     .card { background: white; width: 100%; max-width: 700px; padding: 25px; border-radius: 18px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); }
     h2 { margin-top: 0; text-align: center; font-size: 28px; margin-bottom: 25px; }
     .buttons { display: flex; gap: 15px; justify-content: center; margin-bottom: 25px; }
-    button { padding: 12px 25px; font-size: 18px; border: none; border-radius: 12px; cursor: pointer; transition: 0.2s; }
+    button { padding: 12px 25px; font-size: 18px; border: none; border-radius: 12px;font-family: "Cairo", sans-serif;  cursor: pointer; transition: 0.2s; }
     .in-btn { background: #2ecc71; color: white; }
     .out-btn { background: #e74c3c; color: white; }
     .tools { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
@@ -21,6 +21,13 @@
     .log { background: #f0f3f7; padding: 15px; border-radius: 12px; max-height: 360px; overflow-y: auto; }
     .row { padding: 10px; background: white; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05); }
     .total-box { text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px; }
+    @media print {
+      .only-view { display: none; }
+      .log{
+        max-height: auto;
+        height: max-content;
+      } 
+    }
   </style>
 
   <!-- PWA Manifest -->
@@ -31,17 +38,16 @@
 
 <div class="card">
   <h2>نظام الحضور والانصراف</h2>
-  <div class="buttons">
-    <button class="in-btn" onclick="checkIn()">تسجيل حضور</button>
-    <button class="out-btn" onclick="checkOut()">تسجيل انصراف</button>
+  <div class="buttons only-view">
+    <button class="in-btn" onclick="checkIn()">  حضور</button>
+    <button class="out-btn" onclick="checkOut()">  انصراف</button>
   </div>
   <div class="total-box">
     إجمالي الساعات هذا الشهر: <span id="total-hours">0</span> ساعة
   </div>
-  <div class="tools">
+  <div class="tools only-view">
     <button onclick="deleteLast()">حذف آخر حركة</button>
     <button onclick="window.print()">طباعة</button>
-    <button onclick="exportPDF()">تصدير PDF</button>
   </div>
   <h3>سجل الحركات</h3>
   <div class="log" id="log"></div>
