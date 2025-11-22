@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تسجيل حضور وانصراف</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700&display=swap" rel="stylesheet" />
+
+  <style>
+    body { font-family: "Cairo", sans-serif; background: #f5f7fa; display: flex; justify-content: center; padding: 30px; }
+    .card { background: white; width: 100%; max-width: 700px; padding: 25px; border-radius: 18px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); }
+    h2 { margin-top: 0; text-align: center; font-size: 28px; margin-bottom: 25px; }
+    .buttons { display: flex; gap: 15px; justify-content: center; margin-bottom: 25px; }
+    button { padding: 12px 25px; font-size: 18px; border: none; border-radius: 12px; cursor: pointer; transition: 0.2s; }
+    .in-btn { background: #2ecc71; color: white; }
+    .out-btn { background: #e74c3c; color: white; }
+    .tools { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
+    .tools button { background: #3498db; color: #fff; font-size: 15px; padding: 10px 18px; }
+    .log { background: #f0f3f7; padding: 15px; border-radius: 12px; max-height: 360px; overflow-y: auto; }
+    .row { padding: 10px; background: white; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05); }
+    .total-box { text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px; }
+  </style>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2ecc71" />
+</head>
+<body>
+
+<div class="card">
+  <h2>نظام الحضور والانصراف</h2>
+  <div class="buttons">
+    <button class="in-btn" onclick="checkIn()">تسجيل حضور</button>
+    <button class="out-btn" onclick="checkOut()">تسجيل انصراف</button>
+  </div>
+  <div class="total-box">
+    إجمالي الساعات هذا الشهر: <span id="total-hours">0</span> ساعة
+  </div>
+  <div class="tools">
+    <button onclick="deleteLast()">حذف آخر حركة</button>
+    <button onclick="window.print()">طباعة</button>
+    <button onclick="exportPDF()">تصدير PDF</button>
+  </div>
+  <h3>سجل الحركات</h3>
+  <div class="log" id="log"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  // الكود الأصلي للوظائف: loadData, saveData, checkIn, checkOut, deleteLast, calcHours, exportPDF, render
+  function getCurrentPeriod() { const now = new Date(); let year = now.getFullYear(); let month = now.getMonth(); if (now.getDate() < 21) { month--; if (month < 0) { month = 11; year--; } } return `${year}-${String(month + 1).padStart(2, '0')}`; }
+  function loadData() { return JSON.parse(localStorage.getItem(getCurrentPeriod())) || { records: [] }; }
+  function saveData(data) { localStorage.setItem(getCurrentPeriod(), JSON.stringify(data)); }
+  function checkIn() { const data = loadData(); const last = data.records[data.records.length - 1]; if (last && last.type === "in") { alert("تم تسجيل الحضور بالفعل — لا يمكنك تسجيل حضور مرتين متتاليتين"); return; } data.records.push({ type: "in", time: new Date().toISOString() }); saveData(data); render(); }
+  function checkOut() { const data = loadData(); const last = data.records[data.records.length - 1]; if (!last || last.type === "out") { alert("يجب تسجيل حضور أولاً قبل تسجيل الانصراف"); return; } data.records.push({ type: "out", time: new Date().toISOString() }); saveData(data); render(); }
+  function deleteLast() { const data = loadData(); data.records.pop(); saveData(data); render(); }
+  function calcHours(records) { let total = 0; for (let i = 0; i < records.length; i++) { if (records[i].type === "in" && records[i + 1] && records[i + 1].type === "out") { total += new Date(records[i + 1].time) - new Date(records[i].time); } } return (total / 1000 / 60 / 60).toFixed(2); }
+  function exportPDF() { const { jsPDF } = window.jspdf; const doc = new jsPDF(); const data = loadData(); doc.setFontSize(18); doc.text("تقرير الحضور والانصراف", 20, 20); doc.setFontSize(12); let y = 40; data.records.forEach(r => { doc.text(`${r.type === "in" ? "حضور" : "انصراف"} - ${new Date(r.time).toLocaleString("ar-EG")}`, 20, y); y += 10; if (y > 270) { doc.addPage(); y = 20; } }); doc.text(`إجمالي الساعات: ${calcHours(data.records)} ساعة`, 20, y + 10); doc.save("attendance.pdf"); }
+  function render() { const data = loadData(); const log = document.getElementById("log"); const total = document.getElementById("total-hours"); log.innerHTML = ""; const groups = {}; data.records.forEach(r => { const day = new Date(r.time).toLocaleDateString("ar-EG"); if (!groups[day]) groups[day] = []; groups[day].push(r); }); const days = Object.keys(groups).sort((a,b) => new Date(b) - new Date(a)); days.forEach(day => { const dayTitle = document.createElement("div"); dayTitle.style.fontWeight = "bold"; dayTitle.style.margin = "10px 0 5px"; dayTitle.textContent = `📅 ${day}`; log.appendChild(dayTitle); groups[day].forEach(r => { const div = document.createElement("div"); div.className = "row"; div.innerHTML = `<span>${r.type === "in" ? "حضور" : "انصراف"}</span><span>${new Date(r.time).toLocaleTimeString("ar-EG")}</span>`; log.appendChild(div); }); }); total.textContent = calcHours(data.records); }
+
+  // Service Worker داخل نفس الصفحة مع Offline Cache
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(() => {
+    console.log('Service Worker registered!');
+  }).catch(err => console.error(err));
+}
+  render();
+</script>
+</body>
+</html>
